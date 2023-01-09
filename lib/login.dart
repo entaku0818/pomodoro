@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:pomodoro/pomodolo.dart';
 
 import 'auth.dart';
 import 'profile.dart';
@@ -47,7 +48,7 @@ class AuthExampleApp extends StatelessWidget {
                     stream: FirebaseAuth.instance.authStateChanges(),
                     builder: (context, snapshot) {
                       if (snapshot.hasData) {
-                        return const ProfilePage();
+                        return const Pomodoro();
                       }
                       return const AuthGate();
                     },
