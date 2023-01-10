@@ -22,16 +22,31 @@ class Ticker {
 }
  
 class TimerModel {
-  const TimerModel(this.timeLeft);
+  const TimerModel(this.timeLeft, this.timeStatus);
   final String timeLeft;
+  final TimeStatus timeStatus;
+
 }
+enum TimeStatus{
+  init,
+  started,
+  paused,
+  stoped
+}
+
+class PomodoloModel {
+  const PomodoloModel(this.timerList);
+  final List<TimerModel> timerList;
+}
+ 
  
 class TimerNotifier extends StateNotifier<TimerModel> {
   TimerNotifier() : super(_initialState);
  
-  static const int _initialDuration = 300;
+  static const int _initialDuration = 1500;
   static final _initialState = TimerModel(
     _durationString(_initialDuration),
+    TimeStatus.init
   );
  
  final Ticker _ticker = Ticker();
@@ -44,12 +59,16 @@ class TimerNotifier extends StateNotifier<TimerModel> {
   }
  
   void start() {
+    if (state.timeStatus == TimeStatus.paused){
+      _restartTimer();
+    }else{
       _startTimer();
+    }
   }
  
   void _restartTimer() {
     _tickerSubscription?.resume();
-    state = TimerModel(state.timeLeft);
+    state = TimerModel(state.timeLeft,TimeStatus.started);
   }
  
   void _startTimer() {
@@ -57,19 +76,19 @@ class TimerNotifier extends StateNotifier<TimerModel> {
  
     _tickerSubscription =
         _ticker.tick(ticks: _initialDuration).listen((duration) {
-      state = TimerModel(_durationString(duration));
+      state = TimerModel(_durationString(duration),TimeStatus.started);
     });
  
     _tickerSubscription?.onDone(() {
-      state = TimerModel(state.timeLeft);
+      state = TimerModel(state.timeLeft,TimeStatus.stoped);
     });
  
-    state = TimerModel(_durationString(_initialDuration));
+    state = TimerModel(_durationString(_initialDuration),TimeStatus.started);
   }
  
   void pause() {
     _tickerSubscription?.pause();
-    state = TimerModel(state.timeLeft);
+    state = TimerModel(state.timeLeft,TimeStatus.paused);
   }
  
   void reset() {
@@ -106,7 +125,7 @@ class Pomodoro extends HookConsumerWidget {
     return Scaffold(
       body: Container(
         child: Stack(
-          fit: StackFit.expand, // これを設定すると画面いっぱいに画像が描画されます。
+          fit: StackFit.expand, 
         children: [
           Align(
             alignment: const Alignment(0, 0),
@@ -115,9 +134,65 @@ class Pomodoro extends HookConsumerWidget {
           style: Theme.of(context).textTheme.headlineMedium,
         ) 
           )
-      ,          Align(
-            alignment: const Alignment(0, 0.3),
-            child: Row(
+      ,          const Align(
+            alignment: Alignment(0, 0.3),
+            child:TimeButtons()
+          )
+        
+        ]
+      )
+    ));
+  }
+}
+
+
+
+
+class TimeButtons extends HookConsumerWidget {
+  const TimeButtons({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(timerProvider);
+ 
+    switch (state.timeStatus){
+      
+      case TimeStatus.init:
+        return Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ElevatedButton(
+                  onPressed: () => ref.read(timerProvider.notifier).start(),
+                  child: const Text('stert'),
+               )
+            ]
+            );
+      case TimeStatus.started:
+        return Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+               ElevatedButton(
+                  onPressed: () => ref.read(timerProvider.notifier).pause(),
+                  child: const Text('stop'),
+                                    style: ElevatedButton.styleFrom(
+                    foregroundColor: Colors.red, // background
+                    backgroundColor: Colors.white, // foreground
+                  ),
+               )
+            ]
+            );
+      case TimeStatus.paused:
+                return Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ElevatedButton(
+                  onPressed: () => ref.read(timerProvider.notifier).start(),
+                  child: const Text('stert'),
+               ),
+            ]
+            );
+      case TimeStatus.stoped:
+                return Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 ElevatedButton(
@@ -130,11 +205,9 @@ class Pomodoro extends HookConsumerWidget {
                   child: const Text('stop'),
                )
             ]
-            ) 
-          )
-        
-        ]
-      )
-    ));
+            );
+    }
+    
   }
+
 }
