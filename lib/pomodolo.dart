@@ -187,7 +187,12 @@ class TimeButtons extends HookConsumerWidget {
               children: [
                 ElevatedButton(
                   onPressed: () => ref.read(timerProvider.notifier).start(),
-                  child: const Text('stert'),
+                  child: const Text('restart'),
+               ),
+                const SizedBox(width:20),
+               ElevatedButton(
+                  onPressed: () => ref.read(timerProvider.notifier).reset(),
+                  child: const Text('reset'),
                ),
             ]
             );
