@@ -3,6 +3,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:just_audio/just_audio.dart';
+import 'package:audio_session/audio_session.dart';
 
 
 /// A simple [StateNotifier] that implements a counter.
@@ -11,6 +13,15 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 /// - [ChangeNotifier], with [ChangeNotifierProvider]
 /// - [Stream], with [StreamProvider]
 /// ...
+
+
+
+Future<void> _setupSession() async {
+   _player = AudioPlayer();
+   final session = await AudioSession.instance;
+   await session.configure(const AudioSessionConfiguration.music());
+   await _loadAudioFile();
+}
 
 class Ticker {
   Stream<int> tick({required int ticks}) {
@@ -43,7 +54,7 @@ class PomodoloModel {
 class TimerNotifier extends StateNotifier<TimerModel> {
   TimerNotifier() : super(_initialState);
  
-  static const int _initialDuration = 1500;
+  static const int _initialDuration = 10;
   static final _initialState = TimerModel(
     _durationString(_initialDuration),
     TimeStatus.init
@@ -55,10 +66,12 @@ class TimerNotifier extends StateNotifier<TimerModel> {
   static String _durationString(int duration) {
     final minutes = ((duration / 60) % 60).floor().toString().padLeft(2, '0');
     final seconds = (duration % 60).floor().toString().padLeft(2, '0');
+    print('$minutes:$seconds');
     return '$minutes:$seconds';
   }
  
   void start() {
+    _setupSession();
     if (state.timeStatus == TimeStatus.paused){
       _restartTimer();
     }else{
@@ -77,9 +90,13 @@ class TimerNotifier extends StateNotifier<TimerModel> {
     _tickerSubscription =
         _ticker.tick(ticks: _initialDuration).listen((duration) {
       state = TimerModel(_durationString(duration),TimeStatus.started);
+      if (duration == 0){
+
+      }
     });
  
     _tickerSubscription?.onDone(() {
+      _player.play();
       state = TimerModel(state.timeLeft,TimeStatus.stoped);
     });
  
@@ -117,6 +134,7 @@ final timeLeftProvider = Provider<String>((ref) {
 
 class Pomodoro extends HookConsumerWidget {
   const Pomodoro({Key? key}) : super(key: key);
+
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -215,4 +233,17 @@ class TimeButtons extends HookConsumerWidget {
     
   }
 
+}
+
+late AudioPlayer _player;
+
+
+Future<void> _loadAudioFile() async {
+   try {
+
+     await _player.setAudioSource(AudioSource.uri(Uri.parse(
+          "https://www.nakano-sound.com/freedeta/%E3%83%95%E3%82%A1%E3%83%B3%E3%83%95%E3%82%A1%E3%83%BC%E3%83%AC10%EF%BC%88%E3%82%B2%E3%83%BC%E3%83%A0%E5%90%91%E3%81%91%EF%BC%89.mp3")));
+   } catch(e) {
+      print(e);
+   }
 }
