@@ -1,6 +1,7 @@
 
 import 'dart:async';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
@@ -97,6 +98,7 @@ class TimerNotifier extends StateNotifier<TimerModel> {
  
     _tickerSubscription?.onDone(() {
       _player.play();
+      addtime();
       state = TimerModel(state.timeLeft,TimeStatus.stoped);
     });
  
@@ -247,3 +249,21 @@ Future<void> _loadAudioFile() async {
       print(e);
    }
 }
+
+
+addtime() {
+  FirebaseFirestore.instance
+    .collection('pomodoro')
+    .add(
+      {
+        'createdAt':DateTime.now(),
+        // :TODO serverTimeStampにする！
+        'serverTimestamp':DateTime.now(),
+        'time': 25,
+        'updatedAt': DateTime.now(),
+        'userId':'aaaa',
+      }
+    );
+}
+
+
