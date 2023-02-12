@@ -1,7 +1,10 @@
 
 import 'dart:async';
+import 'dart:ffi';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
@@ -45,6 +48,8 @@ enum TimeStatus{
   paused,
   stoped
 }
+
+
 
 class PomodoloModel {
   const PomodoloModel(this.timerList);
@@ -98,7 +103,7 @@ class TimerNotifier extends StateNotifier<TimerModel> {
  
     _tickerSubscription?.onDone(() {
       _player.play();
-      addtime();
+      addtime(10);
       state = TimerModel(state.timeLeft,TimeStatus.stoped);
     });
  
@@ -251,7 +256,9 @@ Future<void> _loadAudioFile() async {
 }
 
 
-addtime() {
+addtime(int time) {
+
+  var uid = FirebaseAuth.instance.currentUser?.uid;
   FirebaseFirestore.instance
     .collection('pomodoro')
     .add(
@@ -259,9 +266,9 @@ addtime() {
         'createdAt':DateTime.now(),
         // :TODO serverTimeStampにする！
         'serverTimestamp':DateTime.now(),
-        'time': 25,
+        'time': time,
         'updatedAt': DateTime.now(),
-        'userId':'aaaa',
+        'userId': uid,
       }
     );
 }
