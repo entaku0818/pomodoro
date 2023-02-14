@@ -37,10 +37,10 @@ class Ticker {
 }
  
 class TimerModel {
-  const TimerModel(this.timeLeft, this.timeStatus);
+  const TimerModel(this.timeLeft, this.timeStatus,this.timeType);
   final String timeLeft;
   final TimeStatus timeStatus;
-
+  final String timeType; 
 }
 enum TimeStatus{
   init,
@@ -49,6 +49,16 @@ enum TimeStatus{
   stoped
 }
 
+enum TimeType{
+  work('仕事'), 
+  subWork('副業'),
+  myDevelopment('個人開発'),
+  ;
+  
+  const TimeType(this.displayName);
+
+  final String displayName;
+}
 
 
 class PomodoloModel {
@@ -63,7 +73,8 @@ class TimerNotifier extends StateNotifier<TimerModel> {
   static const int _initialDuration = 10;
   static final _initialState = TimerModel(
     _durationString(_initialDuration),
-    TimeStatus.init
+    TimeStatus.init,
+    "仕事"
   );
  
  final Ticker _ticker = Ticker();
@@ -87,7 +98,7 @@ class TimerNotifier extends StateNotifier<TimerModel> {
  
   void _restartTimer() {
     _tickerSubscription?.resume();
-    state = TimerModel(state.timeLeft,TimeStatus.started);
+    state = TimerModel(state.timeLeft,TimeStatus.started,state.timeType);
   }
  
   void _startTimer() {
@@ -95,7 +106,7 @@ class TimerNotifier extends StateNotifier<TimerModel> {
  
     _tickerSubscription =
         _ticker.tick(ticks: _initialDuration).listen((duration) {
-      state = TimerModel(_durationString(duration),TimeStatus.started);
+      state = TimerModel(_durationString(duration),TimeStatus.started,state.timeType);
       if (duration == 0){
 
       }
@@ -103,16 +114,21 @@ class TimerNotifier extends StateNotifier<TimerModel> {
  
     _tickerSubscription?.onDone(() {
       _player.play();
-      addtime(10);
-      state = TimerModel(state.timeLeft,TimeStatus.stoped);
+      addtime(10,state.timeType);
+      state = TimerModel(state.timeLeft,TimeStatus.stoped,state.timeType);
     });
  
-    state = TimerModel(_durationString(_initialDuration),TimeStatus.started);
+    state = TimerModel(_durationString(_initialDuration),TimeStatus.started,state.timeType);
   }
  
   void pause() {
     _tickerSubscription?.pause();
-    state = TimerModel(state.timeLeft,TimeStatus.paused);
+    state = TimerModel(state.timeLeft,TimeStatus.paused,state.timeType);
+  }
+
+  void changeType(String type) {
+    _tickerSubscription?.pause();
+    state = TimerModel(state.timeLeft,state.timeStatus,type);
   }
  
   void reset() {
@@ -142,7 +158,6 @@ final timeLeftProvider = Provider<String>((ref) {
 class Pomodoro extends HookConsumerWidget {
   const Pomodoro({Key? key}) : super(key: key);
 
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final timeLeft = ref.watch(timeLeftProvider);
@@ -152,6 +167,26 @@ class Pomodoro extends HookConsumerWidget {
         child: Stack(
           fit: StackFit.expand, 
         children: [
+          DropdownButton(
+      items: const[
+        DropdownMenuItem(
+          value: '仕事',
+          child: Text('仕事'),
+        ),
+        DropdownMenuItem(
+          value: '副業',
+          child: Text('副業'),
+        ),
+        DropdownMenuItem(
+            value: '個人開発',
+            child: Text('個人開発'),
+        ),
+
+      ],
+        onChanged: (String? value) {
+          
+        },
+      ),
           Align(
             alignment: const Alignment(0, 0),
             child: Text(
@@ -256,7 +291,7 @@ Future<void> _loadAudioFile() async {
 }
 
 
-addtime(int time) {
+addtime(int time,String type) {
 
   var uid = FirebaseAuth.instance.currentUser?.uid;
   FirebaseFirestore.instance
@@ -269,6 +304,7 @@ addtime(int time) {
         'time': time,
         'updatedAt': DateTime.now(),
         'userId': uid,
+        'type':type
       }
     );
 }
