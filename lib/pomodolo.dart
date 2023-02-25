@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:audio_session/audio_session.dart';
+import 'package:pomodoro/setting.dart';
 
 
 /// A simple [StateNotifier] that implements a counter.
@@ -197,10 +198,23 @@ class Pomodoro extends HookConsumerWidget {
       ,          const Align(
             alignment: Alignment(0, 0.3),
             child:TimeButtons()
-          )
-        
+          ),
+          Positioned(
+            top: 16.0,
+            right: 16.0,
+            child: FloatingActionButton(
+              onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => SecondScreen()),
+                  );
+              },
+              child: Icon(Icons.bar_chart),
+            ),
+          ),
         ]
-      )
+      ),
+      
     ));
   }
 }
