@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:pomodoro/data/Pomodoro.dart';
+import 'package:pomodoro/graph.dart';
 
 class SecondScreen extends HookConsumerWidget {
   @override
@@ -11,20 +12,11 @@ class SecondScreen extends HookConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Pomodoros'),
+        title: Text('今日のポモドーロ'),
       ),
       body: pomodoros.when(
         data: (data) {
-          return ListView.builder(
-            itemCount: data.length,
-            itemBuilder: (context, index) {
-              final pomodoro = data[index];
-              return ListTile(
-                title: Text(pomodoro.type),
-                subtitle: Text(pomodoro.time.toString()),
-              );
-            },
-          );
+          return Graph(pomodoloList: data);
         },
         loading: () {
           return Center(
