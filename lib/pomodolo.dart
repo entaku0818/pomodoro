@@ -38,10 +38,11 @@ class Ticker {
 }
  
 class TimerModel {
-  const TimerModel(this.timeLeft, this.timeStatus,this.timeType);
+  const TimerModel(this.timeLeft, this.timeStatus,this.timeType,this.beforeTimeType);
   final String timeLeft;
   final TimeStatus timeStatus;
-  final String timeType; 
+  final TimeType timeType; 
+  final TimeType? beforeTimeType;
 }
 enum TimeStatus{
   init,
@@ -54,6 +55,7 @@ enum TimeType{
   work('仕事'), 
   subWork('副業'),
   myDevelopment('個人開発'),
+  sleep('休憩'),
   ;
   
   const TimeType(this.displayName);
@@ -75,7 +77,8 @@ class TimerNotifier extends StateNotifier<TimerModel> {
   static final _initialState = TimerModel(
     _durationString(_initialDuration),
     TimeStatus.init,
-    "仕事"
+    TimeType.work,
+    null
   );
  
  final Ticker _ticker = Ticker();
@@ -87,7 +90,10 @@ class TimerNotifier extends StateNotifier<TimerModel> {
     print('$minutes:$seconds');
     return '$minutes:$seconds';
   }
- 
+
+  int workTime = 10;
+  int breakTime = 10;
+
   void start() {
     _setupSession();
     if (state.timeStatus == TimeStatus.paused){
@@ -99,7 +105,7 @@ class TimerNotifier extends StateNotifier<TimerModel> {
  
   void _restartTimer() {
     _tickerSubscription?.resume();
-    state = TimerModel(state.timeLeft,TimeStatus.started,state.timeType);
+    state = TimerModel(state.timeLeft,TimeStatus.started,state.timeType,state.beforeTimeType);
   }
  
   void _startTimer() {
@@ -107,34 +113,48 @@ class TimerNotifier extends StateNotifier<TimerModel> {
  
     _tickerSubscription =
         _ticker.tick(ticks: _initialDuration).listen((duration) {
-      state = TimerModel(_durationString(duration),TimeStatus.started,state.timeType);
-      if (duration == 0){
+      state = TimerModel(_durationString(duration),TimeStatus.started,state.timeType,state.beforeTimeType);
 
-      }
     });
  
     _tickerSubscription?.onDone(() {
       _player.play();
-      addtime(10,state.timeType);
-      state = TimerModel(state.timeLeft,TimeStatus.stoped,state.timeType);
+
+
+      if (state.timeType == TimeType.sleep.name){
+        addtime(breakTime,state.timeType.name);
+        state = TimerModel(state.timeLeft,TimeStatus.stoped,state.beforeTimeType!,TimeType.sleep);
+      }else{
+        addtime(workTime,state.timeType.name);
+        state = TimerModel(state.timeLeft,TimeStatus.stoped,TimeType.sleep, state.timeType); 
+      }
+      _startTimer();
     });
  
-    state = TimerModel(_durationString(_initialDuration),TimeStatus.started,state.timeType);
+    state = TimerModel(_durationString(_initialDuration),TimeStatus.started,state.timeType,state.beforeTimeType);
   }
  
   void pause() {
     _tickerSubscription?.pause();
-    state = TimerModel(state.timeLeft,TimeStatus.paused,state.timeType);
+    state = TimerModel(state.timeLeft,TimeStatus.paused,state.timeType,state.beforeTimeType);
   }
 
   void changeType(String type) {
     _tickerSubscription?.pause();
-    state = TimerModel(state.timeLeft,state.timeStatus,type);
+    state = TimerModel(state.timeLeft,state.timeStatus,state.timeType,state.beforeTimeType);
+
   }
  
   void reset() {
     _tickerSubscription?.cancel();
     state = _initialState;
+  }
+
+  void updateType(String type) {
+
+    TimeType timeType = TimeType.values.firstWhere((e) => e.toString().split('.').last == type);
+
+    state = TimerModel(state.timeLeft,state.timeStatus,timeType,state.beforeTimeType);
   }
  
   @override
@@ -156,38 +176,52 @@ final timeLeftProvider = Provider<String>((ref) {
   return ref.watch(_timeLeftProvider);
 });
 
+
 class Pomodoro extends HookConsumerWidget {
   const Pomodoro({Key? key}) : super(key: key);
+
+  
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final timeLeft = ref.watch(timeLeftProvider);
-
+    final state = ref.watch(timerProvider);
+    
     return Scaffold(
       body: Container(
         child: Stack(
           fit: StackFit.expand, 
         children: [
-          DropdownButton(
-      items: const[
-        DropdownMenuItem(
-          value: '仕事',
-          child: Text('仕事'),
-        ),
-        DropdownMenuItem(
-          value: '副業',
-          child: Text('副業'),
-        ),
-        DropdownMenuItem(
-            value: '個人開発',
-            child: Text('個人開発'),
-        ),
+             Align(
+                  alignment:
+                   const Alignment(0, -0.2),
+                  child: DropdownButton(
+                  value: state.timeType.name,
+                  items: const[
+                    DropdownMenuItem(
+                      value: 'work',
+                      child: Text('仕事'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'subWork',
+                      child: Text('副業'),
+                    ),
+                    DropdownMenuItem(
+                        value: 'myDevelopment',
+                        child: Text('個人開発'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'sleep',
+                      child: Text('sleep'),
+                    )
 
-      ],
-        onChanged: (String? value) {
-          
-        },
-      ),
+            ],
+              onChanged: (String? value) {
+                ref.read(timerProvider.notifier).updateType(value!);
+              },
+            ))
+          ,
+       
           Align(
             alignment: const Alignment(0, 0),
             child: Text(
