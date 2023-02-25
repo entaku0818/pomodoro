@@ -22,13 +22,15 @@ class Pomodoro {
     required this.userId,
   });
 
+
+
   factory Pomodoro.fromMap(Map<String, dynamic> data) {
     return Pomodoro(
-      createdAt: (data['createdAt'] as Timestamp).toDate(),
+      createdAt: (data['createdAt']).toDate(),
       serverTimestamp: data['serverTimestamp'],
       time: data['time'],
       type: data['type'],
-      updatedAt: (data['updatedAt'] as Timestamp).toDate(),
+      updatedAt: (data['updatedAt']).toDate(),
       userId: data['userId'],
     );
   }

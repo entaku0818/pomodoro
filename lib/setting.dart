@@ -1,37 +1,59 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:pomodoro/data/Pomodoro.dart';
 
 class SecondScreen extends HookConsumerWidget {
   @override
+  
   Widget build(BuildContext context, WidgetRef ref)  {
+    final pomodoros = ref.watch(pomodorosProvider);
+
     return Scaffold(
       appBar: AppBar(
-        title: Text('Second Screen'),
+        title: Text('Pomodoros'),
       ),
-      body: Column(
-  children: <Widget>[
-    Text('要素1'),
-    Text('要素2'),
-    ElevatedButton(
-      child: Text('Go back'),
-      onPressed: () {
-        Navigator.pop(context);
-      },
-    ),
-  ],
-)
-,
+      body: pomodoros.when(
+        data: (data) {
+          return ListView.builder(
+            itemCount: data.length,
+            itemBuilder: (context, index) {
+              final pomodoro = data[index];
+              return ListTile(
+                title: Text(pomodoro.type),
+                subtitle: Text(pomodoro.time.toString()),
+              );
+            },
+          );
+        },
+        loading: () {
+          return Center(
+            child: CircularProgressIndicator(),
+          );
+        },
+        error: (error, stackTrace) {
+          return Center(
+            child: Text('An error occurred while loading pomodoros'),
+          );
+        },
+      ),
     );
   }
 }
 
-final countStateProvider = StateProvider<int>((ref) => 0);
+
+final FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+final pomodorosStream = firestore.collection('pomodoro').snapshots();
+final pomodorosProvider = StreamProvider<List<Pomodoro>>(
+  (ref) =>
+    pomodorosStream.map(
+      (querySnapshot) => querySnapshot.docs.map(
+        (doc) => 
+          Pomodoro.fromMap(doc.data())).toList()
+      )
+ 
+ );
 
 
-_feachdata() async {
-  final FirebaseFirestore firestore = FirebaseFirestore.instance;
-  DocumentReference user = firestore.collection('users').doc('user1');
-  DocumentSnapshot documentSnapshot = await user.get();
-  print(documentSnapshot.data());
-}
+
